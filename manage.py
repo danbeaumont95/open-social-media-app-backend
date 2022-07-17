@@ -23,3 +23,8 @@ if __name__ == '__main__':
     main()
 
 # python manage.py runserver
+# pip freeze > requirements.txt
+# pip install psycopg2-binary  needed
+# python3 manage.py makemigrations
+# python3 manage.py migrate
+# python3 manage.py makemigrations opensocialmediaapp
