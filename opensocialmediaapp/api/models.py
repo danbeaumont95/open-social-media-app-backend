@@ -7,7 +7,7 @@ class User(models.Model):
     first_name = models.CharField('First Name', max_length=60)
     last_name = models.CharField('Last Name', max_length=60)
     email = models.EmailField('Email', max_length=100)
-    password = models.CharField('Password', max_length=30)
+    password = models.CharField('Password', max_length=120)
 
     # Below allows this model to appear in admin page
     def __str__(self):
