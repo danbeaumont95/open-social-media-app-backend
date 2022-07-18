@@ -22,6 +22,7 @@ def main():
 if __name__ == '__main__':
     main()
 
+# source social-media-app-venv/bin/activate
 # python manage.py runserver
 # pip freeze > requirements.txt
 # pip install psycopg2-binary  needed

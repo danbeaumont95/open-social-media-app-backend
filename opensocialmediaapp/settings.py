@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'opensocialmediaapp',
     'rest_framework',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
