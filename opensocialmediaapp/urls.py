@@ -47,16 +47,70 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import email
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from opensocialmediaapp.api import views
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from .api.models import User, UserLoginTokens
+from django.contrib.auth.hashers import make_password, check_password
+
+# from django.conf.urls import handler403, handler404, handler500, url
+
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
+# router.register(r'login', views.LoginViewSet)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_tokens_for_user(request):
+
+    # find the user base in params
+    user = User.objects.filter(email=request.data['username'])
+
+    if not user:
+        return Response({'Error': 'No user found with those details'})
+
+    hashed_password = user[0].password
+    user_id = user[0].id
+
+    check = check_password(request.data['password'], hashed_password)
+
+    if check == False:
+        return Response({'Error': 'No user found with those details'})
+
+    refresh = RefreshToken.for_user(user[0])
+
+    access = refresh.access_token
+    saved_token = UserLoginTokens.objects.create(
+        access_token=access, refresh_token=refresh, user_id=user_id)
+
+    saved_token.save()
+    # return Response({'Success': 'New user created'})
+
+    return Response({
+        'access': str(access),
+        'refresh': str(refresh),
+    })
+
 
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    # path('user/login_dan', views.UserViewSet.login_user_to_app_dan, name='enterprise')
+    # path('testing123', views.TestUser.login_user_to_app_daniel)
+    path('token/', get_tokens_for_user, name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
