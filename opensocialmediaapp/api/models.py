@@ -17,3 +17,9 @@ class User(models.Model):
 class LinkedAccounts(models.Model):
     website = models.CharField('Website', max_length=60)
     user = models.ManyToManyField(User, blank=True)
+
+
+class UserLoginTokens(models.Model):
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    access_token = models.CharField('Access Token', max_length=400)
+    refresh_token = models.CharField('Refresh Token', max_length=400)
