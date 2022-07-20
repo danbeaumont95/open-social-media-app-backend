@@ -60,7 +60,7 @@ from rest_framework_simplejwt.views import (
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from .api.models import User, UserLoginTokens
 from django.contrib.auth.hashers import make_password, check_password
 
@@ -105,6 +105,21 @@ def get_tokens_for_user(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def refresh_token(request):
+    refresh_token = request.data['refresh_token']
+    user = UserLoginTokens.objects.filter(refresh_token=refresh_token)
+    if not user:
+        return Response({'Error': 'No user found with those details'})
+
+    refresh = RefreshToken.for_user(user[0])
+    access = refresh.access_token
+    updated_token_user = UserLoginTokens.objects.update(access_token=access)
+
+    return Response({'access': str(access)})
+
+
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
@@ -112,5 +127,6 @@ urlpatterns = [
     # path('user/login_dan', views.UserViewSet.login_user_to_app_dan, name='enterprise')
     # path('testing123', views.TestUser.login_user_to_app_daniel)
     path('token/', get_tokens_for_user, name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('refresh_token/', refresh_token, name='refresh_token')
+    # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
