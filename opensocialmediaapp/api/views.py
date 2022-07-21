@@ -27,10 +27,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return obj
 
     def list(self, request, pk=None):
-        print('listing')
-        print(request, 'request123')
         queryset = User.objects.all()
-        print(queryset, 'dan123')
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -47,25 +44,6 @@ class UserViewSet(viewsets.ModelViewSet):
         new_user.save()
         return Response({'Success': 'New user created'})
 
-    # @action(detail=True, methods=['post'], url_path=r'some-prefix/(?P<email>\w+)',)
-    # def login_user_to_app_dan(self, request, pk=None):
-    #     print('dan')
-    #     return Response({'Success': 'New user created'})
-
-
-# class TestUser():
-#     @action(detail=True, methods=['post'])
-#     def login_user_to_app_daniel(self, request, pk=None):
-#         print('dan')
-#         return Response({'Success': 'New user created'})
-
-# class GroupViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint that allows groups to be viewed or edited.
-#     """
-#     queryset = Group.objects.all()
-#     serializer_class = GroupSerializer
-
 
 class LoginViewSet(viewsets.ModelViewSet):
     """
@@ -76,5 +54,4 @@ class LoginViewSet(viewsets.ModelViewSet):
     # lookup_field = 'id'
 
     def create(self, request):
-        print('called 213')
         return Response({'Success': 'Logged in'})
