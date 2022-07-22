@@ -14,6 +14,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import os
+import tweepy
 import email
 from django.contrib import admin
 from django.urls import path, include
@@ -30,6 +32,19 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from .api.models import User, UserLoginTokens
 from django.contrib.auth.hashers import make_password, check_password
+import environ
+from django.core.exceptions import ImproperlyConfigured
+
+env = environ.Env()
+environ.Env.read_env()
+
+
+def get_env_variable(var_name):
+    try:
+        return os.environ[var_name]
+    except KeyError:
+        error_msg = "set the %s environment variable" % var_name
+        raise ImproperlyConfigured(error_msg)
 
 
 router = routers.DefaultRouter()
@@ -83,10 +98,42 @@ def refresh_token(request):
     return Response({'access': str(access)})
 
 
+@api_view(['GET'])
+def twitter(request):
+    # SECRET_KEY = env('SECRET_KEY')
+    auth = tweepy.OAuthHandler(env('API_KEY'), env('API_SECRET_KEY'))
+    auth.set_access_token(env('ACCESS_TOKEN'), env('ACCESS_SECRET_TOKEN'))
+    api = tweepy.API(auth)
+    try:
+        api.verify_credentials()
+        print('Successful Authentication')
+    except:
+        print('Failed authentication')
+    # Store user as a variable
+    user = api.get_user(screen_name='entertainingdan')
+    print(user, 'user123')
+    # Get user Twitter statistics
+    print(f"user.followers_count: {user.followers_count}")
+    print(f"user.listed_count: {user.listed_count}")
+    print(f"user.statuses_count: {user.statuses_count}")
+
+    # Show followers
+    for follower in user.followers():
+        print('Name: ' + str(follower.name))
+        print('Username: ' + str(follower.screen_name))
+    tweets = []
+    for i in tweepy.Cursor(api.search_tweets,
+                           q='from:user -filter:retweets',
+                           tweet_mode='extended').items():
+        tweets.append(i.full_text)
+    print(len(tweets), 'tweets')
+
+
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('token/', get_tokens_for_user, name='token_obtain_pair'),
-    path('refresh_token/', refresh_token, name='refresh_token')
+    path('refresh_token/', refresh_token, name='refresh_token'),
+    path('twitter', twitter, name='twitter')
 ]
