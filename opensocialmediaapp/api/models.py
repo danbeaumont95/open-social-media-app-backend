@@ -23,3 +23,9 @@ class UserLoginTokens(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     access_token = models.CharField('Access Token', max_length=400)
     refresh_token = models.CharField('Refresh Token', max_length=400)
+
+
+class Instagram(models.Model):
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    instagram_user_id = models.CharField('Instagram User ID', max_length=50)
+    access_token = models.CharField('Instagram Access Token', max_length=700)

@@ -1,8 +1,8 @@
 # from django.contrib.auth.models import User, Group
 from operator import itemgetter
-from ..api.models import User
+from ..api.models import User, Instagram
 from rest_framework import viewsets
-from .serializers import UserSerializer
+from .serializers import UserSerializer, InstagramSerializer
 import logging
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -43,6 +43,11 @@ class UserViewSet(viewsets.ModelViewSet):
             first_name=first_name, last_name=last_name, email=email, password=hashed_password)
         new_user.save()
         return Response({'Success': 'New user created'})
+
+
+class InstagramViewSet(viewsets.ModelViewSet):
+    queryset = Instagram.objects.all()
+    serializer_class = InstagramSerializer
 
 
 class LoginViewSet(viewsets.ModelViewSet):
