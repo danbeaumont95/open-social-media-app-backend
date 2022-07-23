@@ -49,6 +49,7 @@ def get_env_variable(var_name):
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
+router.register(r'instagram', views.InstagramViewSet)
 
 
 @api_view(['GET'])
