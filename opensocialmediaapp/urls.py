@@ -34,7 +34,8 @@ from .api.models import User, UserLoginTokens
 from django.contrib.auth.hashers import make_password, check_password
 import environ
 from django.core.exceptions import ImproperlyConfigured
-
+import jwt
+import time
 env = environ.Env()
 environ.Env.read_env()
 
@@ -50,6 +51,49 @@ def get_env_variable(var_name):
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
 router.register(r'instagram', views.InstagramViewSet)
+
+
+def token_response(access_token: str, refresh_token: str):
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
+
+
+def signJWT(user_id: str):
+    jwt_algorithm = env('algorithm')
+    jwt_secret = env('secret')
+    access_payload = {
+        "user_id": user_id,
+        "expires": time.time() + 600
+    }
+    refresh_payload = {
+        "user_id": user_id,
+        "expires": time.time() + 30000000
+    }
+    access_token = jwt.encode(
+        access_payload, jwt_secret, algorithm=jwt_algorithm)
+    refresh_token = jwt.encode(
+        refresh_payload, jwt_secret, algorithm=jwt_algorithm)
+    return token_response(access_token, refresh_token)
+
+
+def new_token_response(access_token: str):
+    return {
+        "access_token": access_token
+    }
+
+
+def sign_new_jwt(user_id: str):
+    jwt_algorithm = env('algorithm')
+    jwt_secret = env('secret')
+    access_payload = {
+        "user_id": user_id,
+        "expires": time.time() + 600
+    }
+    access_token = jwt.encode(
+        access_payload, jwt_secret, algorithm=jwt_algorithm)
+    return new_token_response(access_token)
 
 
 @api_view(['GET'])
@@ -70,33 +114,75 @@ def get_tokens_for_user(request):
     if check == False:
         return Response({'Error': 'No user found with those details'})
 
-    refresh = RefreshToken.for_user(user[0])
+    token = signJWT(user_id)
 
-    access = refresh.access_token
+    access_token = token['access_token']
+    refresh_token = token['refresh_token']
+
     saved_token = UserLoginTokens.objects.create(
-        access_token=access, refresh_token=refresh, user_id=user_id)
-
+        access_token=access_token, refresh_token=refresh_token, user_id=user_id
+    )
     saved_token.save()
-
     return Response({
-        'access': str(access),
-        'refresh': str(refresh),
+        'access': access_token,
+        'refresh': refresh_token
     })
+
+
+def decodeJWT(token: str) -> dict:
+    print(token, 'token1234')
+    try:
+        jwt_algorithm = env('algorithm')
+        jwt_secret = env('secret')
+        decoded_token = jwt.decode(
+            token, jwt_secret, algorithms=[jwt_algorithm])
+        return decoded_token if decoded_token['expires'] <= time.time() else None
+    except Exception as e:
+        print(e, 'eeee')
+        return {}
+
+
+def reIssueAccessToken(token):
+
+    def decodeJWT(token: str) -> dict:
+        jwt_algorithm = env('algorithm')
+        jwt_secret = env('secret')
+        decoded_token = jwt.decode(
+            token, jwt_secret, algorithms=[jwt_algorithm])
+        print(decoded_token, 'daniel123')
+        return decoded_token if decoded_token['expires'] <= time.time() else None
+
+    print(token, 'token321')
+    new_decoded = decodeJWT(token)
+    print(new_decoded, 'new_decoded')
+
+    new_token = sign_new_jwt(new_decoded['user_id'])
+
+    # await save_token_in_db(new_token, str(new_decoded['user_id']))
+    UserLoginTokens.objects.filter(
+        user_id=new_decoded['user_id']).update(access_token=new_token)
+    return new_token
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def refresh_token(request):
-    refresh_token = request.data['refresh_token']
-    user = UserLoginTokens.objects.filter(refresh_token=refresh_token)
-    if not user:
-        return Response({'Error': 'No user found with those details'})
 
-    refresh = RefreshToken.for_user(user[0])
-    access = refresh.access_token
-    updated_token_user = UserLoginTokens.objects.update(access_token=access)
+    refresh_token = request.headers.get('x-refresh')
 
-    return Response({'access': str(access)})
+    bearer_token = request.headers.get('authorization')
+
+    if refresh_token is None or bearer_token is None:
+        return {"error": "Missing token"}
+
+    access_token = bearer_token[7:]
+
+    isAllowed = decodeJWT(access_token)
+
+    if isAllowed is None and refresh_token:
+        new_access_token = reIssueAccessToken(access_token)
+        return Response({'Success': str(new_access_token)})
+    return Response({})
 
 
 @api_view(['GET'])
