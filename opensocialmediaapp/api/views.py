@@ -27,6 +27,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAuthenticated]
 
     def get_object(self):
+        print('dannnn')
         queryset = self.get_queryset()
         obj = get_object_or_404(queryset, user=self.request.user)
         return obj
@@ -37,6 +38,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request):
+        print('called create')
         first_name, last_name, email, password = itemgetter(
             'first_name', 'last_name', 'email', 'password')(request.data)
         hashed_password = make_password(password)

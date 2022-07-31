@@ -14,6 +14,9 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from sendgrid.helpers.mail import Mail
+from sendgrid import SendGridAPIClient
+import smtplib
 import os
 import tweepy
 import email
@@ -36,6 +39,7 @@ import environ
 from django.core.exceptions import ImproperlyConfigured
 import jwt
 import time
+from mailer import Mailer
 env = environ.Env()
 environ.Env.read_env()
 
@@ -96,7 +100,7 @@ def sign_new_jwt(user_id: str):
     return new_token_response(access_token)
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def get_tokens_for_user(request):
 
@@ -216,11 +220,49 @@ def twitter(request):
     print(len(tweets), 'tweets')
 
 
+@api_view(['POST'])
+def reset_password(request):
+    message = {
+        'personalizations': [
+            {
+                'to': [
+                    {
+                        'email': 'danbeaumontcodetests@gmail.com'
+                    }
+                ],
+                'subject': 'Sending with Twilio SendGrid is Fun'
+            }
+        ],
+        'from': {
+            'email': 'danibeamo@hotmail.com'
+        },
+        'content': [
+            {
+                'type': 'text/plain',
+                'value': 'and easy to do anywhere, even with Python'
+            }
+        ]
+    }
+    try:
+        sg = SendGridAPIClient(os.environ.get(
+            env('SENDGRID_API_KEY')))
+        response = sg.send(message)
+        print(response, 'response')
+        print(response.status_code, 'status code')
+        print(response.body, 'res body')
+        print(response.headers, 'res headers')
+        return Response({'message': 'sent'})
+    except Exception as e:
+        print(str(e), 'errordan')
+        return Response({message: str(e)})
+
+
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('token/', get_tokens_for_user, name='token_obtain_pair'),
     path('refresh_token/', refresh_token, name='refresh_token'),
-    path('twitter', twitter, name='twitter')
+    path('twitter', twitter, name='twitter'),
+    path('resetPassword/', reset_password, name='reset_password')
 ]

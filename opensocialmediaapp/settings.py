@@ -54,7 +54,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'opensocialmediaapp',
     'rest_framework',
-    'django_extensions'
+    'django_extensions',
+    'corsheaders',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'opensocialmediaapp.urls'
@@ -162,9 +168,9 @@ REST_FRAMEWORK = {
     #     # 'rest_framework.authentication.TokenAuthentication'
     #     'rest_framework.authentication.SessionAuthentication',
     # ],
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAdminUser'
-    ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAdminUser'
+    # ),
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=15),
