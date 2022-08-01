@@ -250,7 +250,7 @@ def reset_password(request):
         print(response, 'response')
         print(response.status_code, 'status code')
         print(response.body, 'res body')
-        print(response.headers, 'res headers')
+
         return Response({'message': 'sent'})
     except Exception as e:
         print(str(e), 'errordan')
