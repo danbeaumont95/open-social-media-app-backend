@@ -14,6 +14,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import random
+import string
 from sendgrid.helpers.mail import Mail
 from sendgrid import SendGridAPIClient
 import smtplib
@@ -220,17 +222,27 @@ def twitter(request):
     print(len(tweets), 'tweets')
 
 
+def random_string_generator(str_size, allowed_chars):
+    return ''.join(random.choice(allowed_chars) for x in range(str_size))
+
+
 @api_view(['POST'])
 def reset_password(request):
+    size = 12
+
+    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    random_password = random_string_generator(size, letters)
+    email = request.data['email']
+
     message = {
         'personalizations': [
             {
                 'to': [
                     {
-                        'email': 'danbeaumontcodetests@gmail.com'
+                        'email': email
                     }
                 ],
-                'subject': 'Sending with Twilio SendGrid is Fun'
+                'subject': 'Password reset request'
             }
         ],
         'from': {
@@ -239,7 +251,7 @@ def reset_password(request):
         'content': [
             {
                 'type': 'text/plain',
-                'value': 'and easy to do anywhere, even with Python'
+                'value': f'Your new temporary password for Dans App is: {random_password}'
             }
         ]
     }
@@ -247,11 +259,11 @@ def reset_password(request):
         sg = SendGridAPIClient(os.environ.get(
             env('SENDGRID_API_KEY')))
         response = sg.send(message)
-        print(response, 'response')
-        print(response.status_code, 'status code')
-        print(response.body, 'res body')
 
-        return Response({'message': 'sent'})
+        if response.status_code != 202:
+            return Response({'Error': 'Error sending email'})
+
+        return Response({'message': f'Password resest email sent to {email}'})
     except Exception as e:
         print(str(e), 'errordan')
         return Response({message: str(e)})
