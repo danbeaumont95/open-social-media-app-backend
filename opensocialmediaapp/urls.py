@@ -233,6 +233,9 @@ def reset_password(request):
     letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     random_password = random_string_generator(size, letters)
     email = request.data['email']
+    user = User.objects.filter(email=email)
+    if not user:
+        return Response({'Error': 'No user found with those details'})
 
     message = {
         'personalizations': [
@@ -255,6 +258,8 @@ def reset_password(request):
             }
         ]
     }
+    hashed_password = make_password(random_password)
+
     try:
         sg = SendGridAPIClient(os.environ.get(
             env('SENDGRID_API_KEY')))
@@ -262,6 +267,8 @@ def reset_password(request):
 
         if response.status_code != 202:
             return Response({'Error': 'Error sending email'})
+
+        User.objects.filter(email=email).update(password=hashed_password)
 
         return Response({'message': f'Password resest email sent to {email}'})
     except Exception as e:
