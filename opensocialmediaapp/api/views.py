@@ -2,7 +2,7 @@
 import time
 import environ
 from operator import itemgetter
-from ..api.models import User, Instagram
+from ..api.models import User, Instagram, UserLoginTokens
 from rest_framework import viewsets
 from .serializers import UserSerializer, InstagramSerializer
 import logging
@@ -50,6 +50,43 @@ class UserViewSet(viewsets.ModelViewSet):
             first_name=first_name, last_name=last_name, email=email, password=hashed_password)
         new_user.save()
         return Response({'Success': 'New user created'})
+
+    @action(methods=['post'], detail=True)
+    def update_password(self, request, pk):
+
+        old_password = request.data['old_password']
+
+        new_password = request.data['new_password']
+        bearer_token = request.headers.get('authorization')
+        slice = bearer_token[7:]
+        user = UserLoginTokens.objects.filter(access_token=slice).count()
+
+        if user == 0 or user < 1:
+            return Response({'Error': 'No user found'})
+
+        att = UserLoginTokens.objects.filter(
+            access_token=slice).values('user_id')
+        obj = {}
+
+        for val in att:
+            obj['id'] = val['user_id']
+
+        if str(obj['id']) != pk:
+            return Response({'Error': 'ID doesnt match'})
+
+        user_to_update = User.objects.filter(id=pk).values('password')
+        for att in user_to_update:
+            obj['password'] = att['password']
+
+        checked = check_password(old_password, obj['password'])
+
+        if checked == False:
+            return Response({'Error': 'Incorrect current password'})
+
+        hashed_password = make_password(new_password)
+        User.objects.filter(id=pk).update(password=hashed_password)
+
+        return Response({'Success': 'Password successfully updated'})
 
 
 class InstagramViewSet(viewsets.ModelViewSet):
