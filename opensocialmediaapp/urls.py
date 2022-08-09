@@ -131,7 +131,8 @@ def get_tokens_for_user(request):
     saved_token.save()
     return Response({
         'access': access_token,
-        'refresh': refresh_token
+        'refresh': refresh_token,
+        'id': user_id
     })
 
 
@@ -276,6 +277,36 @@ def reset_password(request):
         return Response({message: str(e)})
 
 
+@api_view(['GET'])
+def get_me(request):
+    bearer_token = request.headers.get('authorization')
+
+    if bearer_token is None:
+        return Response({'Error': 'Bearer Token required'})
+    slice = bearer_token[7:]
+
+    user = UserLoginTokens.objects.filter(access_token=slice).count()
+
+    if user == 0 or user < 1:
+        return Response({'Error': 'No user found'})
+    att = UserLoginTokens.objects.filter(
+        access_token=slice).values('user_id')
+
+    obj = {}
+
+    for val in att:
+        obj['id'] = val['user_id']
+
+    user = User.objects.filter(id=obj['id']).values(
+        'first_name', 'last_name', 'email')
+
+    user_obj = {}
+    for val in user:
+        user_obj = val
+
+    return Response(user_obj)
+
+
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
@@ -283,5 +314,6 @@ urlpatterns = [
     path('token/', get_tokens_for_user, name='token_obtain_pair'),
     path('refresh_token/', refresh_token, name='refresh_token'),
     path('twitter', twitter, name='twitter'),
-    path('resetPassword/', reset_password, name='reset_password')
+    path('resetPassword/', reset_password, name='reset_password'),
+    path('user/getMe/', get_me, name='get_me')
 ]
