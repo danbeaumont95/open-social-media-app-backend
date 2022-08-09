@@ -59,6 +59,7 @@ class UserViewSet(viewsets.ModelViewSet):
         new_password = request.data['new_password']
         bearer_token = request.headers.get('authorization')
         slice = bearer_token[7:]
+        print(slice, 'slice')
         user = UserLoginTokens.objects.filter(access_token=slice).count()
 
         if user == 0 or user < 1:
