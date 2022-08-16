@@ -1,4 +1,5 @@
 # from django.contrib.auth.models import User, Group
+import re
 import time
 import environ
 from operator import itemgetter
@@ -88,6 +89,44 @@ class UserViewSet(viewsets.ModelViewSet):
         User.objects.filter(id=pk).update(password=hashed_password)
 
         return Response({'Success': 'Password successfully updated'})
+
+    @action(methods=['post'], detail=True)
+    def update_details(self, request, pk):
+
+        if 'email' not in request.data:
+            return Response({'Error': 'Email required'})
+
+        if 'name' not in request.data:
+            return Response({'Error': 'Name required'})
+        email = request.data['email']
+        full_name = request.data['name']
+        bearer_token = request.headers.get('authorization')
+        slice = bearer_token[7:]
+
+        user = UserLoginTokens.objects.filter(access_token=slice).count()
+
+        if user == 0 or user < 1:
+            return Response({'Error': 'No user found'})
+
+        att = UserLoginTokens.objects.filter(
+            access_token=slice).values('user_id')
+        obj = {}
+
+        for val in att:
+            obj['id'] = val['user_id']
+
+        if str(obj['id']) != pk:
+            return Response({'Error': 'ID doesnt match'})
+        name = full_name.split()
+        first_name = name[0]
+        last_name = name[1]
+        user_to_update = User.objects.filter(id=pk).update(
+            first_name=first_name, last_name=last_name, email=email)
+
+        if user_to_update == 1:
+            return Response({'Success': 'User details successfully updated'})
+        else:
+            return Response({'Error': 'Error updating user'})
 
 
 class InstagramViewSet(viewsets.ModelViewSet):
