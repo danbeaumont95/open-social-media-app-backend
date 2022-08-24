@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from itertools import count
 import random
 import string
 from sendgrid.helpers.mail import Mail
@@ -194,7 +195,6 @@ def refresh_token(request):
 
 @api_view(['GET'])
 def twitter(request):
-    # SECRET_KEY = env('SECRET_KEY')
     auth = tweepy.OAuthHandler(env('API_KEY'), env('API_SECRET_KEY'))
     auth.set_access_token(env('ACCESS_TOKEN'), env('ACCESS_SECRET_TOKEN'))
     api = tweepy.API(auth)
@@ -203,24 +203,14 @@ def twitter(request):
         print('Successful Authentication')
     except:
         print('Failed authentication')
-    # Store user as a variable
-    user = api.get_user(screen_name='entertainingdan')
-    print(user, 'user123')
-    # Get user Twitter statistics
-    print(f"user.followers_count: {user.followers_count}")
-    print(f"user.listed_count: {user.listed_count}")
-    print(f"user.statuses_count: {user.statuses_count}")
 
-    # Show followers
-    for follower in user.followers():
-        print('Name: ' + str(follower.name))
-        print('Username: ' + str(follower.screen_name))
-    tweets = []
-    for i in tweepy.Cursor(api.search_tweets,
-                           q='from:user -filter:retweets',
-                           tweet_mode='extended').items():
-        tweets.append(i.full_text)
-    print(len(tweets), 'tweets')
+    timeline_tweets = api.home_timeline()
+
+    list = []
+    for status in timeline_tweets:
+        list.append({'user': status.user.screen_name, 'tweet': status.text})
+
+    return Response({'Tweets': list})
 
 
 def random_string_generator(str_size, allowed_chars):
