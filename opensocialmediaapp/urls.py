@@ -208,9 +208,11 @@ def twitter(request):
 
     list = []
     for status in timeline_tweets:
-        list.append({'user': status.user.screen_name, 'tweet': status.text})
+        print(status, 'status')
+        list.append({'user': status.user.screen_name, 'tweet': status.text,
+                    'userImage': status.user.profile_image_url_https, 'createdAt': status.created_at})
 
-    return Response({'Tweets': list})
+    return Response({'tweets': list})
 
 
 def random_string_generator(str_size, allowed_chars):
