@@ -210,9 +210,35 @@ def twitter(request):
     for status in timeline_tweets:
         print(status, 'status')
         list.append({'user': status.user.screen_name, 'tweet': status.text,
-                    'userImage': status.user.profile_image_url_https, 'createdAt': status.created_at})
+                    'userImage': status.user.profile_image_url_https, 'createdAt': status.created_at, 'id': status.id})
 
     return Response({'tweets': list})
+
+
+@api_view(['PUT'])
+def add_tweet_as_favourite(request):
+    auth = tweepy.OAuthHandler(env('API_KEY'), env('API_SECRET_KEY'))
+    auth.set_access_token(env('ACCESS_TOKEN'), env('ACCESS_SECRET_TOKEN'))
+    api = tweepy.API(auth)
+    try:
+        api.verify_credentials()
+        print('Successful Authentication')
+    except:
+        print('Failed authentication')
+
+    tweet_id = request.data['id']
+    is_tweet_int = isinstance(tweet_id, int)
+    if is_tweet_int == False:
+        return Response({'Error': 'Invalid tweet Id'})
+
+    try:
+        added = api.create_favorite(tweet_id)
+    except:
+        return Response({'Error': 'Already liked this tweet'})
+
+    if not added.text:
+        return Response({'Error': 'Cannot find tweet'})
+    return Response({'Success': 'Tweet added as favourite'})
 
 
 def random_string_generator(str_size, allowed_chars):
@@ -307,5 +333,7 @@ urlpatterns = [
     path('refresh_token/', refresh_token, name='refresh_token'),
     path('twitter', twitter, name='twitter'),
     path('resetPassword/', reset_password, name='reset_password'),
-    path('user/getMe/', get_me, name='get_me')
+    path('user/getMe/', get_me, name='get_me'),
+    path('addTweetAsFavourite', add_tweet_as_favourite,
+         name='add_tweet_as_favourite')
 ]
